@@ -19,7 +19,7 @@ Running log. Add to this as we go instead of reconstructing it at the end.
 
 - `alloy-values.yaml` — the actual Helm values running for the `otel-lab` Alloy release, pulled live via `helm get values alloy -n otel-lab -o yaml` (not a draft — this is what's deployed). No secrets in it; it only references the `grafana-cloud-creds` Secret by name via `envFrom`.
 - `grafana-cloud.env.example` — template for the credentials file. Copy to `grafana-cloud.env` and fill in real values from Grafana Cloud. `lab/*.env` is gitignored so the real file with the actual API token never gets committed.
-- `dashboard.json` — the custom "dice-server (OTel Lab)" dashboard, exported live from Grafana Cloud (Dashboard settings > JSON Model), not a draft.
+- `grafana/dashboard.json` — the custom "dice-server (OTel Lab)" dashboard, exported live from Grafana Cloud (Dashboard settings > JSON Model), not a draft. Kept in its own subfolder, separate from non-Grafana-resource files like `alloy-values.yaml`, because Grafana Cloud Git Sync (see below) treats every file under its configured sync path as a Grafana resource to provision and fails to parse anything that isn't one.
 
 ## Steps taken
 
