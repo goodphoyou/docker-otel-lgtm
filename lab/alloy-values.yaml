@@ -1,0 +1,92 @@
+# Helm values for the hand-written Alloy install in namespace `otel-lab`.
+# Installed with:
+#   helm upgrade --install alloy grafana/alloy -n otel-lab -f alloy-values.yaml
+#
+# Pulled live from the cluster via `helm get values alloy -n otel-lab -o yaml`
+# on 2026-09-13 — this is what's actually running, not a draft.
+#
+# Known issue (see SUBMISSION.md): still uses the deprecated `env()` stdlib
+# function instead of `sys.env()`. Not yet patched.
+
+alloy:
+  configMap:
+    content: |
+      // Receive OTLP from apps in the cluster (grpc + http)
+      otelcol.receiver.otlp "default" {
+        grpc {
+          endpoint = "0.0.0.0:4317"
+        }
+        http {
+          endpoint = "0.0.0.0:4318"
+        }
+
+        output {
+          metrics = [otelcol.processor.batch.default.input]
+          logs    = [otelcol.processor.batch.default.input]
+          traces  = [otelcol.processor.batch.default.input]
+        }
+      }
+
+      otelcol.processor.batch "default" {
+        output {
+          metrics = [otelcol.exporter.otlphttp.grafana_cloud.input]
+          logs    = [otelcol.exporter.otlphttp.grafana_cloud.input]
+          traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
+        }
+      }
+
+      otelcol.auth.basic "grafana_cloud" {
+        username = env("GRAFANA_CLOUD_INSTANCE_ID")
+        password = env("GRAFANA_CLOUD_API_TOKEN")
+      }
+
+      otelcol.exporter.otlphttp "grafana_cloud" {
+        client {
+          endpoint = env("GRAFANA_CLOUD_OTLP_ENDPOINT")
+          auth     = otelcol.auth.basic.grafana_cloud.handler
+        }
+      }
+
+      // Also scrape the Kubernetes cluster itself (nodes/pods) as an
+      // infra-monitoring component, and remote_write those metrics to
+      // Grafana Cloud through the same OTLP path via a Prometheus->OTLP bridge.
+      discovery.kubernetes "nodes" {
+        role = "node"
+      }
+
+      prometheus.scrape "cluster" {
+        targets    = discovery.kubernetes.nodes.targets
+        forward_to = [otelcol.receiver.prometheus.default.receiver]
+        job_name   = "integrations/kubernetes"
+      }
+
+      otelcol.receiver.prometheus "default" {
+        output {
+          metrics = [otelcol.processor.batch.default.input]
+        }
+      }
+    create: true
+  envFrom:
+  - secretRef:
+      name: grafana-cloud-creds
+  extraPorts:
+  - name: otlp-grpc
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+  - name: otlp-http
+    port: 4318
+    protocol: TCP
+    targetPort: 4318
+  # Not yet applied to the live release — chart default is `{}` (unbounded).
+  # Actual usage observed via `kubectl top` was ~4m CPU / 65Mi memory, so
+  # these are modest headroom, not a tight squeeze.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+controller:
+  replicas: 1
+  type: deployment
