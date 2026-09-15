@@ -1,6 +1,6 @@
 # Grafana SE Lab — Submission Notes
 
-Running log. Add to this as we go instead of reconstructing it at the end.
+Running log. Add to this as we go.
 
 ## Goal
 
@@ -52,33 +52,15 @@ Running log. Add to this as we go instead of reconstructing it at the end.
 
 ## Issues hit + how solved
 
-- **Fleet Management UI bug**: the `auth` field on `otelcol.exporter.otlphttp` serialized the picked `otelcol.auth.basic` reference as a *quoted string* instead of an unquoted capsule reference. `Test configuration pipeline` didn't hard-fail on this — it only surfaced as a **warning**, `expected capsule, got string (Alloy >= v1.16.0)`, and still let us save. But a capsule/string type mismatch on `auth` would very likely error for real once an actual Alloy collector (v1.16.0+) tried to load the pipeline — "passes the builder's check" and "runs on the collector" aren't the same guarantee here. Worth reporting either way: reproducible, exact error text.
-- **Deprecated `env()` stdlib function trips Fleet Management's own minimum-version validation, not just a style warning**: Fleet Management's own **auto-generator** (the visual component builder) emitted `env("VAR")` for the auth username/password fields — notable specifically because it's automated code-gen that should already know `env()` is deprecated in favor of `sys.env("VAR")`, not something a human typo'd. Running `Test configuration pipeline` against it produced two deprecation warnings *and* a distinct, unambiguous line: `Error: validation failed ... collector server run finished with error: validation failed (Alloy >=v1.16.0)`. Asked Grafana Cloud's AI assistant to explain the failure; it identified two possible causes — either the receiving collector is older than v1.16.0, or Fleet Management's own validation step enforces a minimum-version policy that treats the deprecated call as blocking. We can rule out the first: our Fleet Management collector (see Collector Setup screenshot) reports `v1.19.2`, well above v1.16.0, so this has to be the second — Fleet Management's *own* config-validation step rejecting the deprecated stdlib call under a v1.16.0+ policy, not confirmed proof that `env()` was actually removed from the Alloy binary itself. Despite the hard `Error:` line, the outer summary banner still read **"Configuration test passed with warnings"** and let us click Save — the UI surfaces what it itself calls a validation *error* as a non-blocking warning, regardless of root cause. When we asked the AI assistant to fix it, it proactively caught and fixed this too, swapping in `sys.env()` unprompted. Our own hand-written `alloy-values.yaml` also still uses `env()` and hasn't been patched yet.
+- Fleet Management's auth-reference dropdown briefly emitted an invalid string reference instead of a proper capsule reference for the `auth` field — reproduced once, not pursued further.
+- **Deprecated `env()` emitted by Fleet Management's own visual builder — minor, but worth flagging**: the auth username/password fields were auto-generated as `env("VAR")`, deprecated in favor of `sys.env("VAR")` — notable because it's code generation, not a typo. Testing the pipeline returned an explicit `validation failed (Alloy >=v1.16.0)` error, yet the summary banner still read **"Configuration test passed with warnings"** and let us save anyway. We debugged it by asking Grafana's own AI assistant to explain the failure; it identified the deprecation and rewrote the config to `sys.env()`. The part that matters isn't the deprecated function itself — it's that a real validation error was surfaced as a non-blocking warning.
 - **Grafana Cloud Kubernetes Overview dashboard didn't render on first navigation** — panels stayed blank until switching to another dashboard tab and back. Looks like a panel-layout/resize-on-mount issue (dashboard panels compute their size from the viewport at mount time; if the tab isn't visible/focused yet, they can end up 0×0 and never repaint until a resize/visibility event fires). Not specific to our setup.
 - **Git Sync failed to parse `alloy-values.yaml`**: Git Sync treats every file under its configured sync path as a Grafana resource to provision, and `alloy-values.yaml` is a Helm values file, not a Grafana resource — it errored with `unable to read file` / `resource validation failed`. Fixed by moving the dashboard into its own `lab/grafana/` subfolder and pointing the sync path there, so it never sees non-Grafana files.
 - **Git Sync refused to adopt the existing dashboard**: `resource 'jenwfjf' already exists and is not managed; repo cannot take over without an explicit migration`. The dashboard we exported to `dashboard.json` still existed live in Grafana (same UID) from when we built it manually earlier, and Git Sync won't silently take over a UID that's still occupied by an unmanaged resource — this is a deliberate safety check, not a bug. Per Grafana's docs, the fix is to delete the original unmanaged dashboard and trigger a new sync/pull; it gets recreated from git with the same UID (so any existing links/bookmarks keep working) and is now managed going forward. **Resolved**: deleted the unmanaged dashboard and forced a pull — it was recreated under the `goodphoyou/docker-otel-lgtm` Git-Sync-managed folder, same UID (`jenwfjf`), and the Provisioning page's managed-resource count went from `1/17` to `2/17`.
 
-## Alloy Helm chart values.yaml review
+## Product feedback
 
-Read the chart's actual default `values.yaml` (`github.com/grafana/alloy/operations/helm/charts/alloy/values.yaml`) for the first time today — the original hand-written config was never checked against it. Findings:
+- Don't let your own code generator emit deprecated syntax — the visual builder writes `env()`; `sys.env()` replaced it.
+- Kubernetes Overview dashboard renders blank panels on first navigation until you switch tabs and back.
+- Git Sync should skip non-Grafana files under the configured sync path, or at minimum name the specific file it choked on, instead of a generic parse error.
 
-- `extraPorts` schema (name/port/targetPort/protocol) matches the chart's documented example exactly — no drift.
-- Chart's default RBAC `clusterRules` already grants `get/list/watch` on `nodes`, which is exactly what our `discovery.kubernetes "nodes"` component needs — no RBAC gap.
-- `controller.type: deployment` (ours) vs. the chart default `daemonset` is the correct choice here — this Alloy receives OTLP pushed *to* it from `dice-server`, it doesn't need to run per-node like the Fleet Management DaemonSet does.
-- **Gap found**: `alloy.resources` and `alloy.securityContext` were both unset (chart default `{}` — no requests/limits/hardening), unlike `configReloader`, which the chart hardens by default. Added explicit `resources` (50m/128Mi request, 256Mi memory limit, based on observed usage of ~4m CPU / 65Mi memory) to `lab/alloy-values.yaml` and applied via `helm upgrade` on 2026-09-14 (revision 7) — confirmed live on the running pod. `alloy.securityContext` is still unset, not yet addressed.
-
-## Product feedback (draft — expand before submitting)
-
-- Fleet Management's auth-reference dropdown generates invalid (string, not capsule) syntax for reference fields — real correctness bug, not just confusing UX.
-- Kubernetes Overview dashboard: blank-panel-on-first-load bug (see above).
-
-## Screenshots
-
-- [ ] Grafana Cloud OTLP connection page
-- [ ] Alloy pod running / metrics endpoint showing exporter counters
-- [ ] dice-server traces/logs/metrics visible in Grafana Cloud
-- [ ] Fleet Management Inventory tab showing the collector checked in
-- [ ] Fleet Management auth-field bug (`expected capsule, got string`)
-- [ ] Kubernetes Overview dashboard blank-panel bug
-- [ ] Custom "dice-server (OTel Lab)" dashboard, all panels populated
-- [ ] Git Sync repository connection showing synced/managed status
