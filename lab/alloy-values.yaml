@@ -1,6 +1,6 @@
 # Helm values for the hand-written Alloy install in namespace `otel-lab`.
 # Installed with:
-#   helm upgrade --install alloy grafana/alloy -n otel-lab -f alloy-values.yaml
+#   helm upgrade --install alloy grafana/alloy -n otel-lab -f lab/alloy-values.yaml
 #
 # Pulled live from the cluster via `helm get values alloy -n otel-lab -o yaml`
 # on 2026-09-13 — this is what's actually running, not a draft.
@@ -78,9 +78,9 @@ alloy:
     port: 4318
     protocol: TCP
     targetPort: 4318
-  # Not yet applied to the live release — chart default is `{}` (unbounded).
-  # Actual usage observed via `kubectl top` was ~4m CPU / 65Mi memory, so
-  # these are modest headroom, not a tight squeeze.
+  # Applied via `helm upgrade` on 2026-09-14 (revision 7). Chart default is
+  # `{}` (unbounded); actual usage observed via `kubectl top` was ~4m CPU /
+  # 65Mi memory, so these are modest headroom, not a tight squeeze.
   resources:
     requests:
       cpu: 50m
