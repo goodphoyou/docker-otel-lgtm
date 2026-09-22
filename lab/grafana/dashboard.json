@@ -139,7 +139,7 @@
                 }
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
           }
         }
       },
@@ -252,7 +252,7 @@
                 }
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
           }
         }
       },
@@ -365,7 +365,7 @@
                 }
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
           }
         }
       },
@@ -444,7 +444,7 @@
                 "wideLayout": true
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
           }
         }
       },
@@ -560,7 +560,7 @@
                 }
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
           }
         }
       },
@@ -622,7 +622,7 @@
                 "wrapLogMessage": true
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
           }
         }
       },
@@ -700,10 +700,11 @@
               },
               "options": {
                 "cellHeight": "sm",
-                "showHeader": true
+                "showHeader": true,
+                "zebraStriping": false
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
           }
         }
       },
@@ -739,6 +740,21 @@
                 "maxItems": 20,
                 "showInactiveAlerts": false,
                 "sortOrder": 1,
+                "statColorMode": "none",
+                "statThresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                },
+                "statValueMappings": [],
                 "stateFilter": {
                   "error": true,
                   "firing": true,
@@ -750,7 +766,122 @@
                 "viewMode": "list"
               }
             },
-            "version": "13.3.0-35196596112"
+            "version": "13.3.0-35570731645"
+          }
+        }
+      },
+      "panel-9": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "grafanacloud-prom"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": true,
+                        "expr": "histogram_quantile(0.95, sum(rate(traces_spanmetrics_latency{service=\"dice-server\", span_kind=\"SPAN_KIND_SERVER\"}[5m])))",
+                        "legendFormat": "__auto",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "",
+          "id": 9,
+          "links": [],
+          "title": "p95 latency (with exemplars)",
+          "vizConfig": {
+            "group": "timeseries",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": 0
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              }
+            },
+            "version": "13.3.0-35570731645"
           }
         }
       }
@@ -790,7 +921,7 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-7"
+                "name": "panel-9"
               },
               "height": 8,
               "width": 12,
@@ -816,7 +947,7 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-3"
+                "name": "panel-7"
               },
               "height": 8,
               "width": 12,
@@ -861,6 +992,19 @@
               "width": 24,
               "x": 0,
               "y": 24
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-3"
+              },
+              "height": 8,
+              "width": 12,
+              "x": 0,
+              "y": 32
             }
           }
         ]
