@@ -1,0 +1,64 @@
+# dice-server, namespace otel-lab.
+#
+# This replaces the imperative `kubectl create deployment` / `kubectl expose`
+# commands used earlier in the lab (see SUBMISSION.md) with a real manifest,
+# and adds ROLLS_STORE_URL so dice-server calls rolls-store after each roll.
+#
+# Build the image first (from lab/apps/dice-server), then apply:
+#   docker build -t dice-server:lab lab/apps/dice-server
+#   kubectl apply -f lab/k8s/dice-server.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dice-server
+  namespace: otel-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dice-server
+  template:
+    metadata:
+      labels:
+        app: dice-server
+    spec:
+      containers:
+        - name: dice-server
+          image: dice-server:lab
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8084
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: dice-server
+            - name: OTEL_SERVICE_VERSION
+              value: "0.1.0"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://alloy.otel-lab.svc.cluster.local:4318
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "5000"
+            # k8s.node.name is what Application Observability's host-hours
+            # billing checks for first when identifying a billable host on
+            # Kubernetes; without it (or host.id / grafana.host.id) the
+            # service isn't counted and the "send host-hours telemetry"
+            # banner reappears.
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.namespace=otel-lab,deployment.environment=colima-otel-lab,service.version=0.1.0,k8s.node.name=$(K8S_NODE_NAME)
+            - name: ROLLS_STORE_URL
+              value: http://rolls-store:8085
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dice-server
+  namespace: otel-lab
+spec:
+  selector:
+    app: dice-server
+  ports:
+    - port: 8084
+      targetPort: 8084

@@ -1,0 +1,64 @@
+# rolls-store, namespace otel-lab.
+#
+# The downstream dependency dice-server now calls on every roll. It's the
+# service that plays the "root cause" role in the demo: normally fast and
+# reliable, with a fault toggle (POST/DELETE /fault) that makes it slow and
+# error-prone so dice-server starts returning 500s without anything being
+# wrong with dice-server itself. See lab/k8s/fault-on.sh / fault-off.sh.
+#
+# Build the image first (from lab/apps/rolls-store), then apply:
+#   docker build -t rolls-store:lab lab/apps/rolls-store
+#   kubectl apply -f lab/k8s/rolls-store.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rolls-store
+  namespace: otel-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rolls-store
+  template:
+    metadata:
+      labels:
+        app: rolls-store
+    spec:
+      containers:
+        - name: rolls-store
+          image: rolls-store:lab
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8085
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: rolls-store
+            - name: OTEL_SERVICE_VERSION
+              value: "0.1.0"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://alloy.otel-lab.svc.cluster.local:4318
+            - name: OTEL_METRIC_EXPORT_INTERVAL
+              value: "5000"
+            # k8s.node.name is what Application Observability's host-hours
+            # billing checks for first when identifying a billable host on
+            # Kubernetes; without it (or host.id / grafana.host.id) the
+            # service isn't counted and the "send host-hours telemetry"
+            # banner reappears.
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.namespace=otel-lab,deployment.environment=colima-otel-lab,service.version=0.1.0,k8s.node.name=$(K8S_NODE_NAME)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rolls-store
+  namespace: otel-lab
+spec:
+  selector:
+    app: rolls-store
+  ports:
+    - port: 8085
+      targetPort: 8085
