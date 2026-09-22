@@ -921,7 +921,7 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-7"
+                "name": "panel-9"
               },
               "height": 8,
               "width": 12,
@@ -947,7 +947,7 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-3"
+                "name": "panel-7"
               },
               "height": 8,
               "width": 12,
@@ -999,7 +999,7 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-9"
+                "name": "panel-3"
               },
               "height": 8,
               "width": 12,
