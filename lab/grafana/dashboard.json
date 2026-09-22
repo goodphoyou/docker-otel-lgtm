@@ -764,7 +764,7 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-1"
+                "name": "panel-8"
               },
               "height": 8,
               "width": 12,
@@ -790,12 +790,38 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
-                "name": "panel-3"
+                "name": "panel-7"
               },
               "height": 8,
               "width": 12,
               "x": 0,
               "y": 8
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-1"
+              },
+              "height": 8,
+              "width": 12,
+              "x": 12,
+              "y": 8
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-3"
+              },
+              "height": 8,
+              "width": 12,
+              "x": 0,
+              "y": 16
             }
           },
           {
@@ -808,7 +834,7 @@
               "height": 8,
               "width": 6,
               "x": 12,
-              "y": 8
+              "y": 16
             }
           },
           {
@@ -821,7 +847,7 @@
               "height": 8,
               "width": 6,
               "x": 18,
-              "y": 8
+              "y": 16
             }
           },
           {
@@ -834,32 +860,6 @@
               "height": 8,
               "width": 24,
               "x": 0,
-              "y": 16
-            }
-          },
-          {
-            "kind": "GridLayoutItem",
-            "spec": {
-              "element": {
-                "kind": "ElementReference",
-                "name": "panel-7"
-              },
-              "height": 8,
-              "width": 12,
-              "x": 0,
-              "y": 24
-            }
-          },
-          {
-            "kind": "GridLayoutItem",
-            "spec": {
-              "element": {
-                "kind": "ElementReference",
-                "name": "panel-8"
-              },
-              "height": 8,
-              "width": 12,
-              "x": 12,
               "y": 24
             }
           }
